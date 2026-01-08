@@ -1,0 +1,212 @@
+🟢 SALES & REVENUE
+1️⃣ Total revenue by product category:
+SELECT 
+    c.CategoryName,
+    SUM(od.UnitPrice * od.Quantity) AS total_revenue
+FROM order_details od
+JOIN products p ON od.ProductID = p.ProductID
+JOIN categories c ON p.CategoryID = c.CategoryID
+GROUP BY c.CategoryName
+ORDER BY total_revenue DESC;
+
+2️⃣ Total revenue by country (region) :
+SELECT 
+    cust.Country,
+    SUM(od.UnitPrice * od.Quantity) AS total_revenue
+FROM customers cust
+JOIN orders o ON cust.CustomerID = o.CustomerID
+JOIN order_details od ON o.OrderID = od.OrderID
+GROUP BY cust.Country
+ORDER BY total_revenue DESC;
+
+3️⃣ Monthly revenue trend :
+SELECT 
+    DATE_FORMAT(o.OrderDate, '%Y-%m') AS month,
+    SUM(od.UnitPrice * od.Quantity) AS monthly_revenue
+FROM orders o
+JOIN order_details od ON o.OrderID = od.OrderID
+GROUP BY month
+ORDER BY month;
+
+4️⃣ Average order value by country :
+SELECT 
+    cust.Country,
+    AVG(order_totals.order_value) AS avg_order_value
+FROM (
+    SELECT 
+        o.OrderID,
+        o.CustomerID,
+        SUM(od.UnitPrice * od.Quantity) AS order_value
+    FROM orders o
+    JOIN order_details od ON o.OrderID = od.OrderID
+    GROUP BY o.OrderID, o.CustomerID
+) order_totals
+JOIN customers cust ON order_totals.CustomerID = cust.CustomerID
+GROUP BY cust.Country;
+
+5️⃣ Revenue by product :
+SELECT 
+    p.ProductName,
+    SUM(od.UnitPrice * od.Quantity) AS revenue
+FROM products p
+JOIN order_details od ON p.ProductID = od.ProductID
+GROUP BY p.ProductName
+ORDER BY revenue DESC;
+
+🟡 CUSTOMER ANALYTICS
+
+6️⃣ Top 10 customers by lifetime value :
+SELECT 
+    cust.CompanyName,
+    SUM(od.UnitPrice * od.Quantity) AS lifetime_value
+FROM customers cust
+JOIN orders o ON cust.CustomerID = o.CustomerID
+JOIN order_details od ON o.OrderID = od.OrderID
+GROUP BY cust.CompanyName
+ORDER BY lifetime_value DESC
+LIMIT 10;
+
+7️⃣ Average revenue per customer
+SELECT 
+    AVG(customer_revenue) AS avg_revenue_per_customer
+FROM (
+    SELECT 
+        cust.CustomerID,
+        SUM(od.UnitPrice * od.Quantity) AS customer_revenue
+    FROM customers cust
+    JOIN orders o ON cust.CustomerID = o.CustomerID
+    JOIN order_details od ON o.OrderID = od.OrderID
+    GROUP BY cust.CustomerID
+) t;
+
+8️⃣ Number of orders per customer :
+SELECT 
+    cust.CompanyName,
+    COUNT(o.OrderID) AS total_orders
+FROM customers cust
+LEFT JOIN orders o ON cust.CustomerID = o.CustomerID
+GROUP BY cust.CompanyName
+ORDER BY total_orders DESC;
+
+9️⃣ Customers with only one order :
+SELECT 
+    cust.CompanyName,
+    COUNT(o.OrderID) AS order_count
+FROM customers cust
+JOIN orders o ON cust.CustomerID = o.CustomerID
+GROUP BY cust.CompanyName
+HAVING order_count = 1;
+
+🔟 Customer distribution by country :
+SELECT 
+    Country,
+    COUNT(*) AS customer_count
+FROM customers
+GROUP BY Country
+ORDER BY customer_count DESC;
+
+
+🔵 PRODUCT & INVENTORY INSIGHTS
+
+1️⃣1️⃣ Number of products per category :
+SELECT 
+    c.CategoryName,
+    COUNT(p.ProductID) AS product_count
+FROM categories c
+JOIN products p ON c.CategoryID = p.CategoryID
+GROUP BY c.CategoryName;
+
+1️⃣2️⃣ Average product price by category :
+SELECT 
+    c.CategoryName,
+    AVG(p.UnitPrice) AS avg_price
+FROM categories c
+JOIN products p ON c.CategoryID = p.CategoryID
+GROUP BY c.CategoryName;
+
+1️⃣3️⃣ Top 5 most sold products (by quantity)
+SELECT 
+    p.ProductName,
+    SUM(od.Quantity) AS total_quantity_sold
+FROM products p
+JOIN order_details od ON p.ProductID = od.ProductID
+GROUP BY p.ProductName
+ORDER BY total_quantity_sold DESC
+LIMIT 5;
+
+1️⃣4️⃣ Products never ordered
+SELECT 
+    p.ProductName
+FROM products p
+LEFT JOIN order_details od ON p.ProductID = od.ProductID
+WHERE od.ProductID IS NULL;
+
+
+🟣 ORDER BEHAVIOR
+
+1️⃣5️⃣ Orders per year :
+SELECT 
+    YEAR(OrderDate) AS order_year,
+    COUNT(*) AS total_orders
+FROM orders
+GROUP BY order_year
+ORDER BY order_year;
+
+1️⃣6️⃣ Average number of items per order :
+SELECT 
+    AVG(item_count) AS avg_items_per_order
+FROM (
+    SELECT 
+        OrderID,
+        SUM(Quantity) AS item_count
+    FROM order_details
+    GROUP BY OrderID
+) t;
+
+1️⃣7️⃣ Orders by employee :
+SELECT 
+    e.FirstName,
+    e.LastName,
+    COUNT(o.OrderID) AS total_orders
+FROM employees e
+JOIN orders o ON e.EmployeeID = o.EmployeeID
+GROUP BY e.EmployeeID
+ORDER BY total_orders DESC;
+
+
+🔴 ADVANCED BUSINESS THINKING
+
+1️⃣8️⃣ Revenue by employee :
+SELECT 
+    e.FirstName,
+    e.LastName,
+    SUM(od.UnitPrice * od.Quantity) AS revenue
+FROM employees e
+JOIN orders o ON e.EmployeeID = o.EmployeeID
+JOIN order_details od ON o.OrderID = od.OrderID
+GROUP BY e.EmployeeID
+ORDER BY revenue DESC;
+
+1️⃣9️⃣ Category performance by country :
+SELECT 
+    cust.Country,
+    c.CategoryName,
+    SUM(od.UnitPrice * od.Quantity) AS revenue
+FROM customers cust
+JOIN orders o ON cust.CustomerID = o.CustomerID
+JOIN order_details od ON o.OrderID = od.OrderID
+JOIN products p ON od.ProductID = p.ProductID
+JOIN categories c ON p.CategoryID = c.CategoryID
+GROUP BY cust.Country, c.CategoryName
+ORDER BY cust.Country, revenue DESC;
+
+2️⃣0️⃣ Low-performing categories :
+SELECT 
+    c.CategoryName,
+    SUM(od.UnitPrice * od.Quantity) AS revenue
+FROM categories c
+JOIN products p ON c.CategoryID = p.CategoryID
+JOIN order_details od ON p.ProductID = od.ProductID
+GROUP BY c.CategoryName
+ORDER BY revenue ASC;
+
